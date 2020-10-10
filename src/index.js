@@ -10,29 +10,27 @@ class Board extends React.Component {
       <Square 
         value={this.props.squares[i]} 
         onClick={() => this.props.onClick(i)}
+        isWinSquare = {this.props.winningSquares.includes(i)}
       />
     )
   }
 
   render() {
+    let boardSquares = [];
+
+    for(let row = 0; row < 3; row++){
+      let boardRow = [];
+
+      for(let col = 0; col < 3; col++){
+        boardRow.push(<span key={(row * 3) + col}>{this.renderSquare((row * 3) + col)}</span>);
+      }
+
+      boardSquares.push(<div className="board-row" key={row}>{boardRow}</div>);
+    }
 
     return (
       <div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
+        {boardSquares}
       </div>
     );
   }
@@ -40,7 +38,7 @@ class Board extends React.Component {
 
 function Square(props) {
   return (
-    <button className="square" onClick={props.onClick}>
+    <button className={"square " + (props.isWinSquare ? "winSquare" : null)} onClick={props.onClick}>
       {props.value}
     </button>
   );
@@ -60,7 +58,7 @@ function calculateWinner(squares) {
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
+      return {type: squares[a], line: [a, b, c]};
     }
   }
   return null;
@@ -75,10 +73,14 @@ class Game extends React.Component {
       }],
       stepNumber: 0,
       xIsNext: true,
+      isDescending: false,
     }
   }
 
   handleClick(i) {
+    const col = parseInt(i % 3 + 1);
+    const row = parseInt(i / 3 + 1);
+
     const history = this.state.history.slice(0, this.state.stepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
@@ -89,6 +91,7 @@ class Game extends React.Component {
     this.setState({
       history: history.concat([{
         squares: squares,
+        location: [col, row],
       }]),
       stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
@@ -102,6 +105,12 @@ class Game extends React.Component {
     })
   }
 
+  toggleOrder() {
+    this.setState({
+      isDescending: !this.state.isDescending,
+    })
+  }
+
   render() {
     const history = this.state.history;
     const current = history[this.state.stepNumber];
@@ -109,18 +118,22 @@ class Game extends React.Component {
 
     const moves = history.map((step, move) => {
       const desc = move ?
-        'Go to move #' + move :
+        'Go to move #' + move + ' position (' + history[move].location + ')' :
         'Go to game start';
       return (
         <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
+          <button onClick={() => this.jumpTo(move)}>
+            {move == this.state.stepNumber ? <b>{desc}</b> : desc}
+          </button>
         </li>
       );
     });
 
     let status;
     if (winner) {
-      status = 'Winner: ' + winner;
+      status = 'Winner: ' + winner.type;
+    } else if (!current.squares.includes(null)) {
+      status = 'Draw !!!';
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
@@ -131,11 +144,13 @@ class Game extends React.Component {
           <Board 
             squares={current.squares}
             onClick={(i) => this.handleClick(i)}
+            winningSquares={winner ? winner.line : []}
           />
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{moves}</ol>
+          <ol>{this.state.isDescending ? moves.reverse() : moves}</ol>
+          <button onClick={() => this.toggleOrder()}>Change Order</button>
         </div>
       </div>
     );
