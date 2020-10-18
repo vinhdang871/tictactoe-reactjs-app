@@ -85,6 +85,9 @@ function Game() {
     }
 
     return (
+        <div>
+        <h4>Function component version</h4>
+
         <div className="game">
             <div className="game-board">
             <Board 
@@ -98,6 +101,7 @@ function Game() {
             <ol>{isDescending ? moves.reverse() : moves}</ol>
             <button onClick={() => toggleOrder()}>Change Order</button>
             </div>
+        </div>
         </div>
     );
 }
